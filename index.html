@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>易卦 - 易经摇卦</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+            min-height: 100vh;
+            color: #e8d5b7;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #d4af37;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+            text-align: center;
+        }
+        
+        .subtitle {
+            font-size: 0.9rem;
+            color: #8b8b8b;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .question-display {
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .question-text {
+            font-size: 1rem;
+            color: #d4af37;
+        }
+        
+        .hexagram-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            padding: 30px 20px;
+            margin-bottom: 30px;
+            width: 100%;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .lines-container {
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .line {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            height: 40px;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        
+        .line.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .line.animating {
+            animation: lineAppear 0.5s ease forwards;
+        }
+        
+        @keyframes lineAppear {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.8);
+            }
+            50% {
+                transform: translateY(5px) scale(1.1);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .hexagram-number {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .hexagram-name {
+            font-size: 1.8rem;
+            color: #d4af37;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .hexagram-name-en {
+            font-size: 1rem;
+            color: #8b8b8b;
+            margin-bottom: 15px;
+        }
+        
+        .hexagram-meaning {
+            font-size: 1rem;
+            color: #c9b896;
+            line-height: 1.6;
+            text-align: center;
+            max-width: 300px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #d4af37 0%, #aa8a2e 100%);
+            border: none;
+            color: #1a1a2e;
+            padding: 18px 50px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(212, 175, 55, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: rgba(212, 175, 55, 0.1);
+            border: 2px solid #d4af37;
+            color: #d4af37;
+            padding: 12px 30px;
+            font-size: 1rem;
+            margin-top: 15px;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(212, 175, 55, 0.2);
+        }
+        
+        .progress {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(212, 175, 55, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .progress-dot.active {
+            background: #d4af37;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+        }
+        
+        .progress-dot.completed {
+            background: #d4af37;
+        }
+        
+        .shake-hint {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 15px;
+            text-align: center;
+        }
+        
+        .shake-hint span {
+            color: #d4af37;
+            cursor: pointer;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .result-container {
+            width: 100%;
+        }
+        
+        .history-section {
+            margin-top: 30px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .history-title {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .history-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        
+        .history-item {
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .history-item:hover {
+            background: rgba(212, 175, 55, 0.2);
+            border-color: rgba(212, 175, 55, 0.4);
+        }
+        
+        .instruction {
+            font-size: 1rem;
+            color: #c9b896;
+            text-align: center;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.7;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.6rem;
+            }
+            
+            .hexagram-display {
+                padding: 20px 15px;
+            }
+            
+            .line {
+                font-size: 2rem;
+            }
+            
+            .hexagram-name {
+                font-size: 1.5rem;
+            }
+            
+            .btn {
+                padding: 15px 40px;
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>易卦</h1>
+        <p class="subtitle">易经摇卦 · 64卦查询</p>
+        
+        <div class="question-display">
+            <span class="question-text" id="questionText">心中默念您的问题</span>
+        </div>
+        
+        <div class="progress" id="progress">
+            <div class="progress-dot" data-index="0"></div>
+            <div class="progress-dot" data-index="1"></div>
+            <div class="progress-dot" data-index="2"></div>
+            <div class="progress-dot" data-index="3"></div>
+            <div class="progress-dot" data-index="4"></div>
+            <div class="progress-dot" data-index="5"></div>
+        </div>
+        
+        <div class="hexagram-display" id="hexagramDisplay">
+            <div class="instruction" id="instruction">心中默念问题后，点击下方按钮开始摇卦</div>
+            
+            <div class="result-container hidden" id="resultContainer">
+                <div class="lines-container" id="linesContainer"></div>
+                <p class="hexagram-number" id="hexagramNumber"></p>
+                <p class="hexagram-name" id="hexagramName"></p>
+                <p class="hexagram-name-en" id="hexagramNameEn"></p>
+                <p class="hexagram-meaning" id="hexagramMeaning"></p>
+            </div>
+        </div>
+        
+        <button class="btn" id="divineBtn">摇 卦</button>
+        <button class="btn btn-secondary hidden" id="resetBtn">重新摇卦</button>
+        <p class="shake-hint hidden" id="shakeHint">或摇动手机进行摇卦</p>
+        
+        <div class="history-section hidden" id="historySection">
+            <p class="history-title">历史记录</p>
+            <div class="history-list" id="historyList"></div>
+        </div>
+    </div>
+
+    <script>
+        // 64卦数据
+        const hexagrams = {
+            1: { name: '乾', nameEn: 'Creative', meaning: '创始、统治、力量。象征天，代表创造力和领导力。' },
+            2: { name: '坤', nameEn: 'Receptive', meaning: '顺从、包容、滋养。象征地，代表柔顺和大地之德。' },
+            3: { name: '屯', nameEn: 'Difficulty at Beginning', meaning: '萌芽、困难、积累。象征雷云相交，万事开头难。' },
+            4: { name: '蒙', nameEn: 'Youthful Folly', meaning: '启蒙、困惑、启发。象征山水，童蒙需要教育。' },
+            5: { name: '需', nameEn: 'Waiting', meaning: '等待、耐心、储备。象征水在天上，等待时机。' },
+            6: { name: '讼', nameEn: 'Conflict', meaning: '争论、诉讼、协调。象征天与水相背，易起冲突。' },
+            7: { name: '师', nameEn: 'The Army', meaning: '军队、纪律、统率。象征地中有水，兵藏于地。' },
+            8: { name: '比', nameEn: 'Holding Together', meaning: '亲密、团结、选择。象征水在地上，互相依附。' },
+            9: { name: '小畜', nameEn: 'Small Accumulation', meaning: '小积累、蓄力、渐进。象征风在天上，小有积蓄。' },
+            10: { name: '履', nameEn: 'Treading', meaning: '谨慎、履行、踏步。象征泽在天下，谨慎行走。' },
+            11: { name: '泰', nameEn: 'Peace', meaning: '平安、通泰、顺畅。天地相交，万事通达。' },
+            12: { name: '否', nameEn: 'Obstruction', meaning: '阻塞、闭塞、停滞。天地不交，万事不顺。' },
+            13: { name: '同人', nameEn: 'Fellowship', meaning: '合作、同心、聚合。象征天与火同向，同心协力。' },
+            14: { name: '大有', nameEn: 'Great Possession', meaning: '大收获、富有、包容。火在天上，收获丰富。' },
+            15: { name: '谦', nameEn: 'Modesty', meaning: '谦虚、谦让、进步。象征山在地下，谦虚有德。' },
+            16: { name: '豫', nameEn: 'Enthusiasm', meaning: '喜悦、预备、娱乐。象征雷出地上，欢乐备至。' },
+            17: { name: '随', nameEn: 'Following', meaning: '跟随、顺从、随机。象征泽雷相随，随机应变。' },
+            18: { name: '蛊', nameEn: 'Work on Decay', meaning: '救弊、整顿、革新。象征山风相叠，整治腐败。' },
+            19: { name: '临', nameEn: 'Approach', meaning: '领导、接近、关怀。象征地泽临近，接近民众。' },
+            20: { name: '观', nameEn: 'Contemplation', meaning: '观察、仰视、展示。象征风在地上，视察观瞻。' },
+            21: { name: '噬嗑', nameEn: 'Biting', meaning: '惩罚、果断、咬合。象征电雷相交，果断执法。' },
+            22: { name: '贲', nameEn: 'Adornment', meaning: '装饰、文饰、修饰。象征山下有火，略施粉饰。' },
+            23: { name: '剥', nameEn: 'Splitting', meaning: '剥离、侵蚀、衰退。象征山在地上，根基不稳。' },
+            24: { name: '复', nameEn: 'Return', meaning: '回归、复生、周转。象征雷在地中，阳气复生。' },
+            25: { name: '无妄', nameEn: 'Innocence', meaning: '真诚、无为、意外。象征天下有雷，顺势而行。' },
+            26: { name: '大畜', nameEn: 'Great Accumulation', meaning: '大积累、蓄德、培育。象征天在山中，厚积薄发。' },
+            27: { name: '颐', nameEn: 'Nourishment', meaning: '养身、养生、蓄养。象征山下有雷，颐养天年。' },
+            28: { name: '大过', nameEn: 'Great Exceeding', meaning: '大跨越、危机、突破。象征泽水淹木，过渡艰难。' },
+            29: { name: '坎', nameEn: 'Abyss', meaning: '危险、陷阱、考验。象征水重重，危机四伏。' },
+            30: { name: '离', nameEn: 'Clarity', meaning: '光明、依附、文明。象征火炎向上，光明照耀。' },
+            31: { name: '咸', nameEn: 'Feeling', meaning: '感应、相吸引、感情。象征泽与山相感，心心相印。' },
+            32: { name: '恒', nameEn: 'Duration', meaning: '恒久、稳定、持续。象征雷风相随，恒久不变。' },
+            33: { name: '遁', nameEn: 'Retreat', meaning: '退避、隐退、等待。象征天山相叠，适时隐退。' },
+            34: { name: '大壮', nameEn: 'Great Power', meaning: '大强盛、壮大、实力。象征雷在天上，势力强盛。' },
+            35: { name: '晋', nameEn: 'Progress', meaning: '晋升、前进、上升。象征太阳从地平线升起。' },
+            36: { name: '明夷', nameEn: 'Darkening of Light', meaning: '受伤、晦暗、隐忍。象征光明被大地遮蔽。' },
+            37: { name: '家人', nameEn: 'Family', meaning: '家庭、人伦、温暖。象征风助火势，家庭和睦。' },
+            38: { name: '睚', nameEn: 'Opposition', meaning: '对立、矛盾、分歧。象征火在上泽下，目标相背。' },
+            39: { name: '蹇', nameEn: 'Obstacle', meaning: '困难、阻碍、止步。象征水在山上，前路艰难。' },
+            40: { name: '解', nameEn: 'Release', meaning: '解除、释放、舒展。象征雷雨交加，困难解除。' },
+            41: { name: '损', nameEn: 'Decrease', meaning: '减少、克制、修养。象征山泽相临，损上益下。' },
+            42: { name: '益', nameEn: 'Increase', meaning: '增加、增益、帮助。象征风雷相助，益处多多。' },
+            43: { name: '夬', nameEn: 'Breakthrough', meaning: '决定、决断、改革。象征泽水决堤，果断行动。' },
+            44: { name: '姤', nameEn: 'Coming', meaning: '相遇、机遇、防备。象征天风相遇，机遇与挑战并存。' },
+            45: { name: '萃', nameEn: 'Gathering', meaning: '聚集、汇合、团结。象征泽在地上，人才汇聚。' },
+            46: { name: '升', nameEn: 'Rising', meaning: '上升、进升、提升。象征地中生木，稳步上升。' },
+            47: { name: '困', nameEn: 'Exhaustion', meaning: '困境、穷困、磨练。象征泽中无水，资源耗尽。' },
+            48: { name: '井', nameEn: 'Well', meaning: '水井、滋养、恒常。象征水在木上，井然有序。' },
+            49: { name: '革', nameEn: 'Revolution', meaning: '变革、改革、换新。象征泽火相煎，变革之象。' },
+            50: { name: '鼎', nameEn: 'Cauldron', meaning: '稳定、权威、调整。象征木上有火，稳定如鼎。' },
+            51: { name: '震', nameEn: 'Thunder', meaning: '震动、惊惧、警惕。象征雷震百里，震动四方。' },
+            52: { name: '艮', nameEn: 'Mountain', meaning: '静止、止步、安定。象征山立不动，沉稳坚定。' },
+            53: { name: '渐', nameEn: 'Gradual Progress', meaning: '渐进、稳步、嫁娶。象征山上有木，循序渐进。' },
+            54: { name: '归妹', nameEn: 'Marriage', meaning: '婚嫁、归宿、配合。象征雷泽相叠，婚姻之象。' },
+            55: { name: '丰', nameEn: 'Abundance', meaning: '丰富、盛大、丰收。象征雷电交加，收获丰富。' },
+            56: { name: '旅', nameEn: 'Travel', meaning: '旅行、寄居、谨慎。象征山上有火，旅行在外。' },
+            57: { name: '巽', nameEn: 'Wind', meaning: '顺从、渗透、命令。象征风之性，随机应变。' },
+            58: { name: '兑', nameEn: 'Joy', meaning: '喜悦、沟通、和睦。象征泽之水，喜悦之情。' },
+            59: { name: '涣', nameEn: 'Dispersal', meaning: '散开、流通、疏通。象征风水相激，涣然冰释。' },
+            60: { name: '节', nameEn: 'Moderation', meaning: '节制、限制、规矩。象征泽上有水，节制有度。' },
+            61: { name: '中孚', nameEn: 'Inner Truth', meaning: '诚信、真实、感应。象征风在泽上，诚信为本。' },
+            62: { name: '小过', nameEn: 'Small Exceeding', meaning: '小跨越、谨慎、小心。象征雷山上，过犹不及。' },
+            63: { name: '既济', nameEn: 'After Completion', meaning: '完成、成就、圆满。象征水在火上，功成名就。' },
+            64: { name: '未济', nameEn: 'Before Completion', meaning: '未完成、未竟、变通。象征火在水上，还需努力。' }
+        };
+
+        // 状态管理
+        let currentStep = 0;
+        let lines = [];
+        let isDivining = false;
+        let history = JSON.parse(localStorage.getItem('ichingHistory') || '[]');
+
+        // DOM元素
+        const divineBtn = document.getElementById('divineBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const instruction = document.getElementById('instruction');
+        const resultContainer = document.getElementById('resultContainer');
+        const linesContainer = document.getElementById('linesContainer');
+        const hexagramNumber = document.getElementById('hexagramNumber');
+        const hexagramName = document.getElementById('hexagramName');
+        const hexagramNameEn = document.getElementById('hexagramNameEn');
+        const hexagramMeaning = document.getElementById('hexagramMeaning');
+        const progress = document.getElementById('progress');
+        const shakeHint = document.getElementById('shakeHint');
+        const historySection = document.getElementById('historySection');
+        const historyList = document.getElementById('historyList');
+        const questionText = document.getElementById('questionText');
+
+        // 初始化
+        function init() {
+            divineBtn.addEventListener('click', divine);
+            resetBtn.addEventListener('click', reset);
+            updateHistory();
+            
+            // 检测摇动
+            if (window.DeviceMotionEvent) {
+                window.addEventListener('devicemotion', handleShake);
+            }
+        }
+
+        // 摇卦函数
+        function divine() {
+            if (isDivining) return;
+            
+            isDivining = true;
+            divineBtn.disabled = true;
+            questionText.textContent = '摇卦中...';
+            
+            setTimeout(() => {
+                questionText.textContent = '';
+                divineStep();
+            }, 500);
+        }
+
+        // 摇卦步骤
+        function divineStep() {
+            if (currentStep < 6) {
+                instruction.textContent = `第 ${currentStep + 1} 爻...`;
+                
+                setTimeout(() => {
+                    const line = generateLine();
+                    lines.push(line);
+                    showLine(currentStep, line);
+                    updateProgress(currentStep);
+                    currentStep++;
+                    divineStep();
+                }, 800);
+            } else {
+                showResult();
+            }
+        }
+
+        // 生成爻
+        function generateLine() {
+            // 模拟传统摇卦：三个铜钱
+            // 3个正面 = 老阳 (9) - 变爻
+            // 2正1反 = 少阴 (8)
+            // 1正2反 = 少阳 (7)
+            // 3个反面 = 老阴 (6) - 变爻
+            
+            let heads = 0;
+            for (let i = 0; i < 3; i++) {
+                if (Math.random() > 0.5) heads++;
+            }
+            
+            if (heads === 3) return { type: 'oldYang', symbol: '◐', value: 9 };
+            if (heads === 2) return { type: 'yin', symbol: '--', value: 8 };
+            if (heads === 1) return { type: 'yang', symbol: '—', value: 7 };
+            return { type: 'oldYin', symbol: '◑', value: 6 };
+        }
+
+        // 显示爻
+        function showLine(index, line) {
+            const lineEl = document.createElement('div');
+            lineEl.className = 'line';
+            lineEl.textContent = line.symbol;
+            linesContainer.appendChild(lineEl);
+            
+            setTimeout(() => {
+                lineEl.classList.add('visible');
+            }, 50);
+        }
+
+        // 更新进度
+        function updateProgress(index) {
+            const dots = document.querySelectorAll('.progress-dot');
+            dots.forEach((dot, i) => {
+                if (i <= index) {
+                    dot.classList.add('completed');
+                    dot.classList.add('active');
+                }
+            });
+        }
+
+        // 显示结果
+        function showResult() {
+            instruction.classList.add('hidden');
+            resultContainer.classList.remove('hidden');
+            divineBtn.classList.add('hidden');
+            resetBtn.classList.remove('hidden');
+            shakeHint.classList.add('hidden');
+            
+            const hexagramNum = calculateHexagram();
+            const hexagram = hexagrams[hexagramNum];
+            
+            hexagramNumber.textContent = `第 ${hexagramNum} 卦`;
+            hexagramName.textContent = hexagram.name;
+            hexagramNameEn.textContent = hexagram.nameEn;
+            hexagramMeaning.textContent = hexagram.meaning;
+            
+            // 添加到历史
+            addToHistory(hexagramNum, hexagram.name);
+        }
+
+        // 计算卦号
+        function calculateHexagram() {
+            // 从下往上计算：第1爻是lines[0]，第6爻是lines[5]
+            // 阴爻(6,8) = 0，阳爻(7,9) = 1
+            // 64卦 = 第6爻*8 + 第1爻 + 1
+            
+            let binary = '';
+            for (let i = 0; i < 6; i++) {
+                if (lines[i].value === 7 || lines[i].value === 9) {
+                    binary = '1' + binary;
+                } else {
+                    binary = '0' + binary;
+                }
+            }
+            
+            return parseInt(binary, 2) + 1;
+        }
+
+        // 重置
+        function reset() {
+            currentStep = 0;
+            lines = [];
+            isDivining = false;
+            
+            linesContainer.innerHTML = '';
+            resultContainer.classList.add('hidden');
+            divineBtn.classList.remove('hidden');
+            divineBtn.disabled = false;
+            resetBtn.classList.add('hidden');
+            shakeHint.classList.remove('hidden');
+            instruction.classList.remove('hidden');
+            instruction.textContent = '心中默念问题后，点击下方按钮开始摇卦';
+            
+            questionText.textContent = '心中默念您的问题';
+            
+            const dots = document.querySelectorAll('.progress-dot');
+            dots.forEach(dot => {
+                dot.classList.remove('active', 'completed');
+            });
+        }
+
+        // 添加到历史
+        function addToHistory(num, name) {
+            const item = { num, name, time: new Date().toLocaleTimeString() };
+            history.unshift(item);
+            if (history.length > 10) history.pop();
+            localStorage.setItem('ichingHistory', JSON.stringify(history));
+            updateHistory();
+        }
+
+        // 更新历史显示
+        function updateHistory() {
+            if (history.length > 0) {
+                historySection.classList.remove('hidden');
+                historyList.innerHTML = history.map(item => 
+                    `<div class="history-item" onclick="showHistoryItem(${item.num})">${item.name}</div>`
+                ).join('');
+            }
+        }
+
+        // 显示历史记录
+        window.showHistoryItem = function(num) {
+            const hexagram = hexagrams[num];
+            linesContainer.innerHTML = '';
+            instruction.classList.add('hidden');
+            resultContainer.classList.remove('hidden');
+            divineBtn.classList.add('hidden');
+            resetBtn.classList.remove('hidden');
+            
+            hexagramNumber.textContent = `第 ${num} 卦`;
+            hexagramName.textContent = hexagram.name;
+            hexagramNameEn.textContent = hexagram.nameEn;
+            hexagramMeaning.textContent = hexagram.meaning;
+        };
+
+        // 摇动检测
+        let lastShake = 0;
+        function handleShake(event) {
+            const now = Date.now();
+            if (now - lastShake < 1000) return;
+            
+            const { accelerationIncludingGravity } = event;
+            if (!accelerationIncludingGravity) return;
+            
+            const { x, y, z } = accelerationIncludingGravity;
+            const acceleration = Math.sqrt(x*x + y*y + z*z);
+            
+            if (acceleration > 15) {
+                lastShake = now;
+                if (!isDivining && currentStep === 0) {
+                    divine();
+                } else if (currentStep > 0 && currentStep < 6) {
+                    divineStep();
+                }
+            }
+        }
+
+        // 启动
+        init();
+    </script>
+</body>
+</html>
